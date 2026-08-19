@@ -1,13 +1,13 @@
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "pico/stdlib.h"
 #include "hardware/pio.h"
 #include "hardware/clocks.h"
 #include "ws2812.pio.h"
 
+//硬體設定
 #define IS_RGBW false
-#define NUM_PIXELS 150
+#define NUM_PIXELS 8
 
 #define WS2812_PIN 16
 
@@ -15,16 +15,24 @@
 #define ECHO_PIN 2
 #define BRIGHT 40
 
+//距離設置
+#define DIST_WARN 100.0f 
+#define DIST_ALERT 30.0f 
+
 // Check the pin is compatible with the platform
 #if WS2812_PIN >= NUM_BANK0_GPIOS
 #error Attempting to use a pin>=32 on a platform that does not support it
 #endif
 
+/* WS2812B 硬體設置 */
+
+// 把24bit的顏色放進PIO佇列
 static inline void put_pixel(PIO pio, uint sm, uint32_t pixel_grb)
 {
     pio_sm_put_blocking(pio, sm, pixel_grb << 8u);
 }
 
+// (R,G,B)命令 改成 (G-R-B) 晶片指定
 static inline uint32_t urgb_u32(uint8_t r, uint8_t g, uint8_t b)
 {
     return  ((uint32_t)(r) << 8) |
@@ -38,50 +46,6 @@ static inline uint32_t urgbw_u32(uint8_t r, uint8_t g, uint8_t b, uint8_t w)
             ((uint32_t)(g) << 16) |
             ((uint32_t)(w) << 24) |
             (uint32_t)(b);
-}
-
-void pattern_snakes(PIO pio, uint sm, uint len, uint t)
-{
-    for (uint i = 0; i < len; ++i)
-    {
-        uint x = (i + (t >> 1)) % 64;
-        if (x < 10)
-            put_pixel(pio, sm, urgb_u32(0xff, 0, 0));
-        else if (x >= 15 && x < 25)
-            put_pixel(pio, sm, urgb_u32(0, 0xff, 0));
-        else if (x >= 30 && x < 40)
-            put_pixel(pio, sm, urgb_u32(0, 0, 0xff));
-        else
-            put_pixel(pio, sm, 0);
-    }
-}
-
-void pattern_random(PIO pio, uint sm, uint len, uint t)
-{
-    if (t % 8)
-        return;
-    for (uint i = 0; i < len; ++i)
-        put_pixel(pio, sm, rand());
-}
-
-void pattern_sparkle(PIO pio, uint sm, uint len, uint t)
-{
-    if (t % 8)
-        return;
-    for (uint i = 0; i < len; ++i)
-        put_pixel(pio, sm, rand() % 16 ? 0 : 0xffffffff);
-}
-
-void pattern_greys(PIO pio, uint sm, uint len, uint t)
-{
-    uint max = 100; // let's not draw too much current!
-    t %= max;
-    for (uint i = 0; i < len; ++i)
-    {
-        put_pixel(pio, sm, t * 0x10101);
-        if (++t >= max)
-            t = 0;
-    }
 }
 
 typedef void (*pattern)(PIO pio, uint sm, uint len, uint t);
@@ -155,10 +119,6 @@ int main()
 
     ws2812_program_init(pio, sm, offset, WS2812_PIN, 800000, IS_RGBW);
 
-    int t = 0;
-
-    stdio_init_all();
-
     gpio_init(TRIG_PIN);
     gpio_set_dir(TRIG_PIN, GPIO_OUT);
     gpio_put(TRIG_PIN, 0);
@@ -192,7 +152,4 @@ int main()
 
         sleep_ms(500);
     }
-
-    // This will free resources and unload our program
-    pio_remove_program_and_unclaim_sm(&ws2812_program, pio, sm, offset);
 }
