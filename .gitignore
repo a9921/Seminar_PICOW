@@ -1,0 +1,14 @@
+# CMake 與編譯產物
+build/
+generated/
+
+# 輸出檔
+*.uf2
+*.elf
+*.bin
+*.dis
+*.hex
+*.map
+
+# VS Code 設定（每台電腦各自產生）
+.vscode/
