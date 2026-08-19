@@ -55,6 +55,18 @@ static void fill_all(PIO pio, uint sm, uint8_t r, uint8_t g, uint8_t b)
 float measure_distance_cm(void)
 {
 
+    // 0. 確認回歸原狀
+    absolute_time_t dealine = make_timeout_time_ms(10);
+    while (gpio_get(ECHO_PIN) == 1)
+    {
+        /* code */
+        if (absolute_time_diff_us(get_absolute_time(), dealine) < 0)
+        {
+            /* code */
+            return -1.0f;
+        }
+        
+    }
     
 
     // 1. 送出 10us 的觸發脈衝
