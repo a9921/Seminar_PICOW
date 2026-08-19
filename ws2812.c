@@ -56,16 +56,15 @@ float measure_distance_cm(void)
 {
 
     // 0. 確認回歸原狀
-    absolute_time_t dealine = make_timeout_time_ms(10);
+    absolute_time_t deadline = make_timeout_time_ms(10);
     while (gpio_get(ECHO_PIN) == 1)
     {
         /* code */
-        if (absolute_time_diff_us(get_absolute_time(), dealine) < 0)
+        if (absolute_time_diff_us(get_absolute_time(), deadline) < 0)
         {
             /* code */
             return -1.0f;
         }
-        
     }
     
 
@@ -77,7 +76,7 @@ float measure_distance_cm(void)
     gpio_put(TRIG_PIN, 0);
 
     // 2. 等 Echo 轉為高電位（最多等 50ms，避免程式卡死）
-    absolute_time_t deadline = make_timeout_time_ms(50);
+    deadline = make_timeout_time_ms(50);
     while (gpio_get(ECHO_PIN) == 0)
     {
         if (absolute_time_diff_us(get_absolute_time(), deadline) < 0)
@@ -99,12 +98,19 @@ float measure_distance_cm(void)
     return (float)pulse_us * 0.0343f / 2.0f;
 }
 
-
+/* 主程式 */
 int main()
 {
     // set_sys_clock_48();
     stdio_init_all();
+    sleep_ms(2000);
     printf("WS2812 Smoke Test, using pin %d\n", WS2812_PIN);
+    
+    gpio_init(TRIG_PIN);
+    gpio_set_dir(TRIG_PIN, GPIO_OUT);
+    gpio_put(TRIG_PIN, 0);
+    gpio_init(ECHO_PIN);
+    gpio_set_dir(ECHO_PIN, GPIO_IN);
 
     // todo get free sm
     PIO pio;
@@ -119,12 +125,7 @@ int main()
 
     ws2812_program_init(pio, sm, offset, WS2812_PIN, 800000, IS_RGBW);
 
-    gpio_init(TRIG_PIN);
-    gpio_set_dir(TRIG_PIN, GPIO_OUT);
-    gpio_put(TRIG_PIN, 0);
-    gpio_init(ECHO_PIN);
-    gpio_set_dir(ECHO_PIN, GPIO_IN);
-
+    // 主迴圈: 測量->判斷->顯示,每0.5秒一次
     while (true)
     {
         float d = measure_distance_cm();
