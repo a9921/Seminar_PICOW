@@ -40,28 +40,23 @@ static inline uint32_t urgb_u32(uint8_t r, uint8_t g, uint8_t b)
             (uint32_t)(b);
 }
 
-static inline uint32_t urgbw_u32(uint8_t r, uint8_t g, uint8_t b, uint8_t w)
+// 燈條顯示同一顏色
+static void fill_all(PIO pio, uint sm, uint8_t r, uint8_t g, uint8_t b)
 {
-    return ((uint32_t)(r) << 8) |
-            ((uint32_t)(g) << 16) |
-            ((uint32_t)(w) << 24) |
-            (uint32_t)(b);
+    for (int i = 0; i < NUM_PIXELS; i++)
+    {
+        put_pixel(pio, sm, urgb_u32(r, g, b));
+    }
 }
 
-typedef void (*pattern)(PIO pio, uint sm, uint len, uint t);
-const struct
-{
-    pattern pat;
-    const char *name;
-} pattern_table[] = {
-    {pattern_snakes, "Snakes!"},
-    {pattern_random, "Random data"},
-    {pattern_sparkle, "Sparkles"},
-    {pattern_greys, "Greys"},
-};
+/* 超音波控制 */
 
+// 觸發測距，回傳距離(公分);逾時或無回波傳-1 
 float measure_distance_cm(void)
 {
+
+    
+
     // 1. 送出 10us 的觸發脈衝
     gpio_put(TRIG_PIN, 0);
     sleep_us(2);
@@ -92,13 +87,6 @@ float measure_distance_cm(void)
     return (float)pulse_us * 0.0343f / 2.0f;
 }
 
-static void fill_all(PIO pio, uint sm, uint8_t r, uint8_t g, uint8_t b)
-{
-    for (int i = 0; i < NUM_PIXELS; i++)
-    {
-        put_pixel(pio, sm, urgb_u32(r, g, b));
-    }
-}
 
 int main()
 {
