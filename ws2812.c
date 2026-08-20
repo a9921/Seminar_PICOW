@@ -104,7 +104,7 @@ int main()
     // set_sys_clock_48();
     stdio_init_all();
     sleep_ms(2000);
-    printf("WS2812 Smoke Test, using pin %d\n", WS2812_PIN);
+    printf("超音波距離顯示器, using pin %d\n", WS2812_PIN);
     
     gpio_init(TRIG_PIN);
     gpio_set_dir(TRIG_PIN, GPIO_OUT);
@@ -135,12 +135,12 @@ int main()
             printf("no echo\n");
             fill_all(pio, sm, 0, 0, BRIGHT); // 藍燈：量測失敗
         }
-        else if (d > 100.0f)
+        else if (d > DIST_WARN)
         {
             printf("%.1f cm -> 綠\n", d);
             fill_all(pio, sm, 0, BRIGHT, 0); // 綠燈：正常
         }
-        else if (d >= 30.0f)
+        else if (d >= DIST_ALERT)
         {
             printf("%.1f cm -> 黃\n", d);
             fill_all(pio, sm, BRIGHT * 2 / 5, BRIGHT, 0); // 黃燈：警戒
