@@ -143,7 +143,7 @@ int main()
         else if (d >= 30.0f)
         {
             printf("%.1f cm -> 黃\n", d);
-            fill_all(pio, sm, BRIGHT, BRIGHT / 2, 0); // 黃燈：警戒
+            fill_all(pio, sm, BRIGHT * 2 / 5, BRIGHT, 0); // 黃燈：警戒
         }
         else
         {
