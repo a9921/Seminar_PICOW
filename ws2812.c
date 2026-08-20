@@ -8,7 +8,6 @@
 //硬體設定
 #define IS_RGBW false
 #define NUM_PIXELS 8
-
 #define WS2812_PIN 16
 
 #define TRIG_PIN 3
@@ -18,11 +17,46 @@
 //距離設置
 #define DIST_WARN 100.0f 
 #define DIST_ALERT 30.0f 
+#define SAMPLES 5
+#define CONFIRM_COUNT 3
+
+//時間設置
+#define TICK_MS 100
+#define BLINK_TICKS 4
+#define PRINT_TICKS 5
 
 // Check the pin is compatible with the platform
 #if WS2812_PIN >= NUM_BANK0_GPIOS
 #error Attempting to use a pin>=32 on a platform that does not support it
 #endif
+
+/* 系統顯示顏色設置 */
+typedef enum
+{
+    STATE_ERROR = 0,  //測量失敗    藍
+    STATE_NORMAL,     //安全        綠
+    STATE_WARN,       //有人在附近  黃
+    STATE_ALERT,      //靠近機櫃    紅燈恆亮
+    STATE_ANOMALY     //門開卻無人  紅燈閃爍
+}sys_state_t;
+
+static const char *state_name(sys_state_t st)
+{
+    switch (st)
+    {
+    case STATE_ERROR:
+        return "ERROR (blue)";
+    case STATE_NORMAL:
+        return "NORMAL (green)";
+    case STATE_WARN:
+        return "WARN (yellow)";
+    case STATE_ALERT:
+        return "ALERT (red)";
+    case STATE_ANOMALY:
+        return "ANOMALY (red blink)";
+    }
+    return "UNKNOW";
+}
 
 /* WS2812B 硬體設置 */
 
@@ -97,6 +131,21 @@ float measure_distance_cm(void)
     int64_t pulse_us = absolute_time_diff_us(t_start, t_end);
     return (float)pulse_us * 0.0343f / 2.0f;
 }
+
+/* 測量緩衝 */
+static float sample_buf[SAMPLES];
+static int sample_idx = 0;
+static bool buf_filled = false;
+
+
+static void push_sample(float d)
+{
+    sample_buf[sample_idx] = d;
+    sample_idx = (sample_idx + 1) % SAMPLES;
+    if(sample_idx == 0)
+        buf_filled = true;
+}
+
 
 /* 主程式 */
 int main()
