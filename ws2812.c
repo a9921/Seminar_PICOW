@@ -215,6 +215,32 @@ static sys_state_t debounce(sys_state_t now)
     return stable;
 }
 
+// 狀態轉成燈號
+static void render_state(PIO pio, uint sm, sys_state_t st, bool blink_on)
+{
+    switch (st)
+    {
+    case STATE_ERROR:
+        ffill_all(pio, sm, 0, 0, BRIGHT);   // 藍燈：量測失敗
+        break;
+    case STATE_NORMAL:
+        fill_all(pio, sm, 0, BRIGHT, 0);    // 綠燈：正常;
+        break;
+    case STATE_WARN:
+        fill_all(pio, sm, BRIGHT * 2 / 5, BRIGHT, 0);   // 黃燈：警戒
+        break;
+    case STATE_ALERT:
+        fill_all(pio, sm, BRIGHT, 0, 0);    // 紅燈：警報
+        break;
+    case STATE_ANOMALY:
+        if (blink_on)
+            fill_all(pio, sm, BRIGHT, 0, 0);
+        else
+            fill_all(pio, sm, 0, 0, 0);
+        break;
+    }
+}
+
 
 /* 主程式 */
 int main()
