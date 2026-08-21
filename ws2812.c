@@ -234,9 +234,9 @@ static void render_state(PIO pio, uint sm, sys_state_t st, bool blink_on)
         break;
     case STATE_ANOMALY:
         if (blink_on)
-            fill_all(pio, sm, BRIGHT, 0, 0);
+            fill_all(pio, sm, BRIGHT, 0, 0);    // 閃紅燈 : 門開可無人
         else
-            fill_all(pio, sm, 0, 0, 0);
+            fill_all(pio, sm, 0, 0, 0);     // 關燈 : 修理中
         break;
     }
 }
