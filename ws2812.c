@@ -269,32 +269,28 @@ int main()
 
     ws2812_program_init(pio, sm, offset, WS2812_PIN, 800000, IS_RGBW);
 
+    uint32_t tick = 0;
+
     // 主迴圈: 測量->判斷->顯示,每0.5秒一次
     while (true)
     {
-        float d = measure_distance_cm();
+        push_sample(measure_distance_cm());     //測量距離
+        float d = get_median();
 
-        if (d < 0.0f)
-        {
-            printf("no echo\n");
-            fill_all(pio, sm, 0, 0, BRIGHT); // 藍燈：量測失敗
-        }
-        else if (d > DIST_WARN)
-        {
-            printf("%.1f cm -> 綠\n", d);
-            fill_all(pio, sm, 0, BRIGHT, 0); // 綠燈：正常
-        }
-        else if (d >= DIST_ALERT)
-        {
-            printf("%.1f cm -> 黃\n", d);
-            fill_all(pio, sm, BRIGHT * 2 / 5, BRIGHT, 0); // 黃燈：警戒
-        }
-        else
-        {
-            printf("%.1f cm -> 紅\n", d);
-            fill_all(pio, sm, BRIGHT, 0, 0); // 紅燈：警報
-        }
+        sys_state_t state = debounce(classify_distaance(d));    //狀態分類
 
+        bool blink_on = ((tick / BLINK_TICKS) % 2) == 0;    //閃爍
+
+        render_state(pio, sm, state, blink_on);     //狀態顯示
+
+        if(tick % PRINT_TICKS == 0)     //狀態文字輸出
+        {
+            if(d < 0.0f)
+                printf("no echo     -> %s\n", state_name(state));
+            else
+                printf("%6.1f cm    -> %s\n", d, state_name(state));
+        }
+        tick++;    
         sleep_ms(500);
     }
 }
