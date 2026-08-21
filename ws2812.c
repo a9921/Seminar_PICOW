@@ -137,13 +137,44 @@ static float sample_buf[SAMPLES];
 static int sample_idx = 0;
 static bool buf_filled = false;
 
-
+// 測量值存進緩衝區
 static void push_sample(float d)
 {
     sample_buf[sample_idx] = d;
     sample_idx = (sample_idx + 1) % SAMPLES;
     if(sample_idx == 0)
         buf_filled = true;
+}
+
+//取出中位數
+static float get_median(void)
+{
+    float tmp[SAMPLES];
+    int n = 0;
+    int limit = buf_filled ? SAMPLES : sample_idx;
+
+    for(int i = 0; i < limit; i++)
+    {
+        if(sample_buf[i] > 0.0f)
+            tmp[n++] = sample_buf[i];
+    }
+
+    if(n == 0)
+        return -1.0f;
+    
+    // 測量值排序
+    for(int i = 0; i < n ; i++)
+    {
+        float key = tmp[i];
+        int j = i -1;
+        while (j >= 0 && tmp[j] > key)
+        {
+            tmp[j+1] = tmp[j];
+            j--;
+        }
+        tmp[j+1] = key;
+    }
+    return tmp[n/2]
 }
 
 
