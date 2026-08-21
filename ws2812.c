@@ -18,7 +18,7 @@
 #define DIST_WARN 100.0f 
 #define DIST_ALERT 30.0f 
 #define SAMPLES 5
-#define CONFIRM_COUNT 3
+#define SAME_STATE 3
 
 //時間設置
 #define TICK_MS 100
@@ -174,7 +174,45 @@ static float get_median(void)
         }
         tmp[j+1] = key;
     }
-    return tmp[n/2]
+    return tmp[n/2];
+}
+
+/* 狀態判斷 */ 
+// 距離判斷
+static sys_state_t classify_distaance(float d)
+{
+    if(d < 0.0f)
+        return STATE_ERROR;
+    if(d > DIST_WARN)
+        return STATE_NORMAL;
+    if(d > DIST_ALERT)
+        return STATE_WARN;
+    return STATE_ALERT;
+}
+
+// 連續狀態相同
+static sys_state_t debounce(sys_state_t now)
+{
+    static sys_state_t stable = STATE_NORMAL;
+    static sys_state_t temp_state = STATE_NORMAL;
+    static int count = 0;
+
+    if(now == temp_state)
+    {
+        if(count < SAME_STATE)
+            count++;
+    }
+    else
+    {
+        now = temp_state;
+        count = 1;
+    }
+
+    if(count >= SAME_STATE)
+    {
+        stable = temp_state;
+    }
+    return stable;
 }
 
 
