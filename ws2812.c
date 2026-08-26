@@ -4,6 +4,7 @@
 #include "hardware/pio.h"
 #include "hardware/clocks.h"
 #include "ws2812.pio.h"
+#include "hardware/uart.h"
 
 //硬體設定
 #define IS_RGBW false
@@ -13,6 +14,10 @@
 #define TRIG_PIN 3
 #define ECHO_PIN 2
 #define BRIGHT 40
+#define UART_ID uart0
+#define BAUD_RATE 115200
+#define TX_PIN 0
+#define RX_PIN 1
 
 //距離設置
 #define DIST_WARN 100.0f 
@@ -179,7 +184,7 @@ static float get_median(void)
 
 /* 狀態判斷 */ 
 // 距離判斷
-static sys_state_t classify_distaance(float d)
+static sys_state_t classify_distance(float d)
 {
     if(d < 0.0f)
         return STATE_ERROR;
@@ -204,7 +209,7 @@ static sys_state_t debounce(sys_state_t now)
     }
     else
     {
-        now = temp_state;
+        temp_state = now;
         count = 1;
     }
 
@@ -221,7 +226,7 @@ static void render_state(PIO pio, uint sm, sys_state_t st, bool blink_on)
     switch (st)
     {
     case STATE_ERROR:
-        ffill_all(pio, sm, 0, 0, BRIGHT);   // 藍燈：量測失敗
+        fill_all(pio, sm, 0, 0, BRIGHT);   // 藍燈：量測失敗
         break;
     case STATE_NORMAL:
         fill_all(pio, sm, 0, BRIGHT, 0);    // 綠燈：正常;
@@ -247,6 +252,10 @@ int main()
 {
     // set_sys_clock_48();
     stdio_init_all();
+    uart_init(UART_ID, BAUD_RATE);
+    gpio_set_function(TX_PIN, GPIO_FUNC_UART);
+    gpio_set_function(RX_PIN, GPIO_FUNC_UART);
+
     sleep_ms(2000);
     printf("超音波距離顯示器, using pin %d\n", WS2812_PIN);
     
@@ -271,13 +280,13 @@ int main()
 
     uint32_t tick = 0;
 
-    // 主迴圈: 測量->判斷->顯示,每0.5秒一次
+    // 主迴圈: 測量->判斷->顯示,每0.1秒一次
     while (true)
     {
         push_sample(measure_distance_cm());     //測量距離
         float d = get_median();
 
-        sys_state_t state = debounce(classify_distaance(d));    //狀態分類
+        sys_state_t state = debounce(classify_distance(d));    //狀態分類
 
         bool blink_on = ((tick / BLINK_TICKS) % 2) == 0;    //閃爍
 
@@ -285,12 +294,22 @@ int main()
 
         if(tick % PRINT_TICKS == 0)     //狀態文字輸出
         {
+            char msg[64];
+            int dist_mm = -1;
             if(d < 0.0f)
+            {
                 printf("no echo     -> %s\n", state_name(state));
+                dist_mm = -1;
+            }
             else
+            {
                 printf("%6.1f cm    -> %s\n", d, state_name(state));
+                dist_mm = (int)(d * 10.0f);
+            }
+            snprintf(msg, sizeof(msg), "{\"dist_mm\": %d, \"state\": %d}\n", dist_mm, state);
+            uart_puts(UART_ID, msg);
         }
         tick++;    
-        sleep_ms(500);
+        sleep_ms(TICK_MS);
     }
 }
