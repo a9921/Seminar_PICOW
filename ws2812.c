@@ -9,7 +9,7 @@
 //硬體設定
 #define IS_RGBW false
 #define NUM_PIXELS 8
-#define WS2812_PIN 16
+#define WS2812_PIN 15
 
 #define TRIG_PIN 3
 #define ECHO_PIN 2
@@ -232,7 +232,7 @@ static void render_state(PIO pio, uint sm, sys_state_t st, bool blink_on)
         fill_all(pio, sm, 0, BRIGHT, 0);    // 綠燈：正常;
         break;
     case STATE_WARN:
-        fill_all(pio, sm, BRIGHT * 2 / 5, BRIGHT, 0);   // 黃燈：警戒
+        fill_all(pio, sm, BRIGHT * 3 / 5, BRIGHT * 4 / 5, 0);   // 黃燈：警戒
         break;
     case STATE_ALERT:
         fill_all(pio, sm, BRIGHT, 0, 0);    // 紅燈：警報
@@ -306,7 +306,7 @@ int main()
                 printf("%6.1f cm    -> %s\n", d, state_name(state));
                 dist_mm = (int)(d * 10.0f);
             }
-            snprintf(msg, sizeof(msg), "{\"dist_mm\": %d, \"state\": %d}\n", dist_mm, state);
+            snprintf(msg, sizeof(msg), "{\"dist_mm\": %d, \"state\": %d}\r\n", dist_mm, state);
             uart_puts(UART_ID, msg);
         }
         tick++;    
