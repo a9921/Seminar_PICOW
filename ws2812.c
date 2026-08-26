@@ -256,6 +256,8 @@ int main()
     gpio_set_function(TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(RX_PIN, GPIO_FUNC_UART);
 
+    bool rack = 0;
+
     sleep_ms(2000);
     printf("超音波距離顯示器, using pin %d\n", WS2812_PIN);
     
