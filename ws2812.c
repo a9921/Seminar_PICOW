@@ -256,7 +256,7 @@ int main()
     gpio_set_function(TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(RX_PIN, GPIO_FUNC_UART);
 
-    bool rack = 0;
+    bool door_state = false;
 
     sleep_ms(2000);
     printf("超音波距離顯示器, using pin %d\n", WS2812_PIN);
@@ -287,12 +287,38 @@ int main()
     {
         push_sample(measure_distance_cm());     //測量距離
         float d = get_median();
-
+        
+        while(uart_is_readable(UART_ID))
+        {
+            char tmp = uart_getc(UART_ID);
+            if(tmp == 'D')
+            {
+                door_state = true;  
+            }
+            else if(tmp == 'C')
+            {
+                door_state = false;
+            }
+        }
+        
         sys_state_t state = debounce(classify_distance(d));    //狀態分類
+
+        if(door_state == true)
+        {
+            if(state == STATE_NORMAL || state == STATE_ERROR)
+            {
+                state = STATE_ANOMALY;
+            }
+            else
+            {
+                state = STATE_ALERT;
+            }
+        }
 
         bool blink_on = ((tick / BLINK_TICKS) % 2) == 0;    //閃爍
 
         render_state(pio, sm, state, blink_on);     //狀態顯示
+
 
         if(tick % PRINT_TICKS == 0)     //狀態文字輸出
         {
@@ -308,7 +334,7 @@ int main()
                 printf("%6.1f cm    -> %s\n", d, state_name(state));
                 dist_mm = (int)(d * 10.0f);
             }
-            snprintf(msg, sizeof(msg), "{\"dist_mm\": %d, \"state\": %d}\r\n", dist_mm, state);
+            snprintf(msg, sizeof(msg), "{\"dist_mm\": %d, \"state\": %d, \"door\": %d}\r\n", dist_mm, state, door_state?1:0);
             uart_puts(UART_ID, msg);
         }
         tick++;    
