@@ -232,7 +232,7 @@ static void render_state(PIO pio, uint sm, sys_state_t st, bool blink_on)
         fill_all(pio, sm, 0, BRIGHT, 0);    // 綠燈：正常;
         break;
     case STATE_WARN:
-        fill_all(pio, sm, BRIGHT * 3 / 5, BRIGHT * 4 / 5, 0);   // 黃燈：警戒
+        fill_all(pio, sm, BRIGHT * 1 / 5, BRIGHT * 3 / 5, 0);   // 黃燈：警戒
         break;
     case STATE_ALERT:
         fill_all(pio, sm, BRIGHT, 0, 0);    // 紅燈：警報
